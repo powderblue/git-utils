@@ -1,0 +1,34 @@
+{
+    "name": "powderblue/git-utils",
+    "description": "",
+    "type": "project",
+    "license": "ISC",
+    "authors": [
+        {
+            "name": "Daniel Bettles",
+            "email": "danbettles@yahoo.co.uk"
+        }
+    ],
+    "require": {
+        "php": "^7.4|^8.1.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "squizlabs/php_codesniffer": "^3.5",
+        "danbettles/codesniffer-standard": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {"PowderBlue\\GitUtils\\": "src/"}
+    },
+    "autoload-dev": {
+        "psr-4": {"PowderBlue\\GitUtils\\Tests\\": "tests/src/"}
+    },
+    "scripts": {
+        "app:test": "phpunit --bootstrap=vendor/autoload.php --colors=always tests",
+        "app:lint": "phpcs --standard=phpcs.xml",
+        "app:check-quality": [
+            "@app:test",
+            "@app:lint"
+        ]
+    }
+}
