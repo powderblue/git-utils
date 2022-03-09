@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace PowderBlue\GitUtils;
 
 use InvalidArgumentException;
+use OutOfBoundsException;
 use RuntimeException;
 
+use function array_keys;
 use function array_splice;
-use function count;
 use function file;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
+use function in_array;
 use function is_file;
 use function preg_match;
 use function rtrim;
@@ -56,6 +58,7 @@ class Gitignore
      * Appends the patterns, starting on a new line.
      *
      * @param string[] $patterns
+     * @throws RuntimeException If it failed to append patterns.
      */
     public function appendPatterns(array $patterns): self
     {
@@ -81,30 +84,39 @@ class Gitignore
         return $this;
     }
 
-    public function insertPatternAtLineNo(string $pattern, int $lineNo): self
+    /**
+     * @param array|string $oneOrMorePatterns
+     * @param integer $lineNo
+     * @throws OutOfBoundsException If the line number does not exist.
+     * @throws RuntimeException If it failed to insert the pattern(s).
+     */
+    public function insertPatternsAtLineNo($oneOrMorePatterns, int $lineNo): self
     {
         $lines = $this->getLines();
 
-        // We'll need to append an EOL if we're inserting between lines (before the last line).
-        $eol = $lineNo < count($lines)
-            ? PHP_EOL
-            : ''
-        ;
+        if (!in_array($lineNo, array_keys($lines))) {
+            throw new OutOfBoundsException('The line number does not exist.');
+        }
 
-        array_splice($lines, $lineNo, 0, ["{$pattern}{$eol}"]);
+        $patternsStr = implode(PHP_EOL, (array) $oneOrMorePatterns) . PHP_EOL;
+        array_splice($lines, $lineNo, 0, [$patternsStr]);
+
         $bytesWritten = file_put_contents($this->getFilename(), $lines);
 
         if (!$bytesWritten) {
-            throw new RuntimeException("Failed to insert pattern into `{$this->getFilename()}`.");
+            throw new RuntimeException("Failed to insert the pattern(s) into `{$this->getFilename()}`.");
         }
 
         return $this;
     }
 
+    /**
+     * @throws InvalidArgumentException If the gitignore file does not exist.
+     */
     private function setFilename(string $filename): self
     {
         if (!is_file($filename)) {
-            throw new InvalidArgumentException("The `.gitignore` (`{$filename}`) does not exist.");
+            throw new InvalidArgumentException("The gitignore file (`{$filename}`) does not exist.");
         }
 
         $this->filename = $filename;

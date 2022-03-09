@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PowderBlue\GitUtils\Tests;
 
 use InvalidArgumentException;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 use PowderBlue\GitUtils\Gitignore;
 use RuntimeException;
@@ -53,25 +54,25 @@ class GitignoreTest extends TestCase
             [
                 false,
                 false,
-                $this->createFixtureFilename('files_and_dirs'),
+                $this->createFixtureFilename('with_trailing_newline'),
                 'baz',
             ],
             [
                 false,
                 false,
-                $this->createFixtureFilename('files_and_dirs'),
+                $this->createFixtureFilename('with_trailing_newline'),
                 '/baz',
             ],
             [
                 false,
                 false,
-                $this->createFixtureFilename('files_and_dirs'),
+                $this->createFixtureFilename('with_trailing_newline'),
                 '/baz/',
             ],
             [
                 2,
                 true,
-                $this->createFixtureFilename('files_and_dirs'),
+                $this->createFixtureFilename('with_trailing_newline'),
                 'baz/',
             ],
         ];
@@ -122,29 +123,31 @@ class GitignoreTest extends TestCase
             [
                 implode(PHP_EOL, [
                     'foo',
-                    'bar',
-                    'baz',
-                    'qux',
+                    '/bar',
+                    'baz/',
+                    '/qux/',
                     'quux',
+                    'quuz',
                 ]),
                 $this->createFixtureFilename('with_trailing_newline'),
                 [
-                    'qux',
                     'quux',
+                    'quuz',
                 ],
             ],
             [
                 implode(PHP_EOL, [
                     'foo',
-                    'bar',
-                    'baz',
-                    'qux',
+                    '/bar',
+                    'baz/',
+                    '/qux/',
                     'quux',
+                    'quuz',
                 ]),
                 $this->createFixtureFilename('without_trailing_newline'),
                 [
-                    'qux',
                     'quux',
+                    'quuz',
                 ],
             ],
         ];
@@ -170,74 +173,105 @@ class GitignoreTest extends TestCase
         $this->assertSame($expectedFileContent, $tempFileContent);
     }
 
-    public function providesForTestinsertpatternatlineno(): array
+    public function providesForTestinsertpatternsatlineno(): array
     {
         return [
             [
                 implode(PHP_EOL, [
+                    'quux',
                     'foo',
-                ]),
-                $this->createFixtureFilename('empty'),
-                'foo',
-                0,
-            ],
-            [
-                implode(PHP_EOL, [
-                    'qux',
-                    'foo',
-                    'bar',
-                    'baz',
+                    '/bar',
+                    'baz/',
+                    '/qux/',
                     '',
                 ]),
                 $this->createFixtureFilename('with_trailing_newline'),
-                'qux',
+                'quux',
                 0,
             ],
             [
                 implode(PHP_EOL, [
                     'foo',
-                    'qux',
-                    'bar',
-                    'baz',
+                    'quux',
+                    '/bar',
+                    'baz/',
+                    '/qux/',
                     '',
                 ]),
                 $this->createFixtureFilename('with_trailing_newline'),
-                'qux',
+                'quux',
                 1,
             ],
             [
                 implode(PHP_EOL, [
                     'foo',
-                    'bar',
-                    'baz',
-                    'qux',
+                    'quux',
+                    'quuz',
+                    '/bar',
+                    'baz/',
+                    '/qux/',
+                    '',
                 ]),
                 $this->createFixtureFilename('with_trailing_newline'),
-                'qux',
-                3,
+                [
+                    'quux',
+                    'quuz',
+                ],
+                1,
             ],
         ];
     }
 
     /**
-     * @dataProvider providesForTestinsertpatternatlineno
+     * @dataProvider providesForTestinsertpatternsatlineno
      */
-    public function testInsertpatternatlineno(
+    public function testInsertpatternsatlineno(
         $expectedFileContent,
         $templateFilename,
-        $pattern,
+        $oneOrMorePatterns,
         $lineNo
     ) {
         $tempFilePath = $this->createTempFileFromTemplate($templateFilename);
 
         $gitignore = new Gitignore($tempFilePath);
-        $something = $gitignore->insertPatternAtLineNo($pattern, $lineNo);
+        $something = $gitignore->insertPatternsAtLineNo($oneOrMorePatterns, $lineNo);
 
         $tempFileContent = file_get_contents($tempFilePath);
         unlink($tempFilePath);
 
         $this->assertSame($gitignore, $something);
         $this->assertSame($expectedFileContent, $tempFileContent);
+    }
+
+    public function providesImpossibleArgumentsForInsertpatternsatlineno(): array
+    {
+        return [
+            [  // There are no lines in an empty file.
+                $this->createFixtureFilename('empty'),
+                'foo',
+                1,
+            ],
+            [  // There are no lines -- at all -- in an empty file.
+                $this->createFixtureFilename('empty'),
+                'foo',
+                0,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider providesImpossibleArgumentsForInsertpatternsatlineno
+     */
+    public function testInsertpatternsatlinenoThrowsAnExceptionIfTheLineNoIsOutOfBounds(
+        $filename,
+        $oneOrMorePatterns,
+        $lineNo
+    ) {
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('The line number does not exist.');
+
+        $gitignore = new Gitignore($filename);
+        $gitignore->insertPatternsAtLineNo($oneOrMorePatterns, $lineNo);
     }
 
     private function createFixtureFilename(string $basename): string
