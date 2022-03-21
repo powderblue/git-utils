@@ -150,6 +150,28 @@ class GitignoreTest extends TestCase
                     'quuz',
                 ],
             ],
+            [
+                implode(PHP_EOL, [
+                    '',
+                    'foo',
+                ]),
+                $this->createFixtureFilename('only_newline'),
+                [
+                    'foo',
+                ],
+            ],
+            [
+                implode(PHP_EOL, [
+                    '',
+                    'foo',
+                    '',
+                ]),
+                $this->createFixtureFilename('only_newline'),
+                [
+                    'foo',
+                    '',
+                ],
+            ],
         ];
     }
 
