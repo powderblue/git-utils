@@ -37,7 +37,9 @@ class Gitignore
         return file($this->getFilename()) ?: [];
     }
 
-    /** @return int|false */
+    /**
+     * @return int|false
+     */
     public function findPattern(string $pattern)
     {
         foreach ($this->getLines() as $i => $line) {
@@ -57,11 +59,13 @@ class Gitignore
     /**
      * Appends the patterns, starting on a new line.
      *
-     * @param string[] $patterns
+     * @param string|string[] $oneOrMorePatterns
      * @throws RuntimeException If it failed to append patterns.
      */
-    public function appendPatterns(array $patterns): self
+    public function appendPatterns($oneOrMorePatterns): self
     {
+        $patterns = (array) $oneOrMorePatterns;
+
         $fileContent = file_get_contents($this->getFilename());
 
         // If the file doesn't end with a newline then we'll need to add one -- so that all the patterns occupy their
@@ -85,20 +89,22 @@ class Gitignore
     }
 
     /**
-     * @param array|string $oneOrMorePatterns
+     * @param string|string[] $oneOrMorePatterns
      * @param integer $lineNo
      * @throws OutOfBoundsException If the line number does not exist.
      * @throws RuntimeException If it failed to insert the pattern(s).
      */
     public function insertPatternsAtLineNo($oneOrMorePatterns, int $lineNo): self
     {
+        $patterns = (array) $oneOrMorePatterns;
+
         $lines = $this->getLines();
 
         if (!in_array($lineNo, array_keys($lines))) {
             throw new OutOfBoundsException('The line number does not exist.');
         }
 
-        $patternsStr = implode(PHP_EOL, (array) $oneOrMorePatterns) . PHP_EOL;
+        $patternsStr = implode(PHP_EOL, $patterns) . PHP_EOL;
         array_splice($lines, $lineNo, 0, [$patternsStr]);
 
         $bytesWritten = file_put_contents($this->getFilename(), $lines);

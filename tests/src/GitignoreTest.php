@@ -172,6 +172,24 @@ class GitignoreTest extends TestCase
                     '',
                 ],
             ],
+            [
+                implode(PHP_EOL, [
+                    'foo',
+                ]),
+                $this->createFixtureFilename('empty'),
+                'foo',
+            ],
+            [
+                implode(PHP_EOL, [
+                    'foo',
+                    '/bar',
+                    'baz/',
+                    '/qux/',
+                    'foo',
+                ]),
+                $this->createFixtureFilename('with_trailing_newline'),
+                'foo',
+            ],
         ];
     }
 
